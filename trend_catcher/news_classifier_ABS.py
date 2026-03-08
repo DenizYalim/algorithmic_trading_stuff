@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from market_news_ABS import News_Classification
 
 
-class News_Classifier(ABC):
+class News_Classifier(ABC): # This is pretty useless, i may deprecate this later 
     @abstractmethod
     def classify(self, title:str, content:str) -> News_Classification:
         pass

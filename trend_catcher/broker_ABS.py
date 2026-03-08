@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 import logging
 import txt_file_logging
 
+class _owned_assets(): # i aint writing this rn bro ffs
+    pass
+
 class trade_info():
     def __init__(self, symbol, entry_price, stop_loss, take_profit, date): # TODO: adeti napcam
         self.symbol = symbol

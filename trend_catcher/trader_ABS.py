@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from market_news_ABS import MarketNew, News_Classification
 from news_classifier_ABS import News_Classifier
-from broker_ABS import Broker, trade_info
+from broker_ABS import Broker, TradeInfo
 import logging
 
 
@@ -14,7 +14,7 @@ def _trade_request():
         self.confidence = confidence
 
 
-def trader(ABC):
+class Trader(ABC):
     @abstractmethod
     def analyze_news(
         self, news: MarketNew
@@ -28,7 +28,7 @@ def trader(ABC):
         pass
 
 
-def regex_trader(trader):
+class RegexTrader(Trader):
     def __init__(self, bullish_patterns: list = None, bearish_patterns: list = None, confidence_needed = 0.5):
         self.bullish_patterns = [""]  # default bullish patterns
         self.bearish_patterns = [""]  # defauly bearish patterns
@@ -47,6 +47,6 @@ def regex_trader(trader):
 
     def trade(self, broker:Broker, news: MarketNew):
         trade_request : _trade_request = analyze_news(news)
-        trade_inf = trade_info(symbol=trade_request.symbol, entry_price=trade_request.price) # this conversion isn't nice create new file for trade_requests and trade_info later
+        trade_inf = TradeInfo(symbol=trade_request.symbol, entry_price=trade_request.price) # this conversion isn't nice create new file for trade_requests and trade_info later
         broker.place_trade(trade_inf)
         logging.info(f"symbol={trade_request.symbol}, entry_price={trade_request.price}")

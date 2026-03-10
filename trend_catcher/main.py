@@ -1,9 +1,6 @@
 from market_news_ABS import MarketNew
-from news_classifier_ABS import REGEX_classifier
-from trend import Trend
-from broker_ABS import Broker, simulation_broker
-from trend_catcher_ABS import TrendCatcher
-from trader_ABS import regex_trader
+from broker_ABS import Broker, SimulatedBroker
+from trader_ABS import RegexTrader
 
 def ask_for_news() -> MarketNew:
     # Implement logic to fetch news from various sources and return a MarketNew object
@@ -13,17 +10,11 @@ def ask_for_news() -> MarketNew:
 def start():  # REGEX DEMO
     while True:
         news = ask_for_news()
-
-        news_classifier = REGEX_classifier()
-        # news.set_classification(news_classifier)
-
-        # trend_catcher = TrendCatcher()
-        # trend_catcher.analyze_trend(news_classification)
-        
-        broker: Broker = simulation_broker()
+ 
+        broker: Broker = SimulatedBroker()
         # broker.place_trade(trend_catcher)
-        trader = regex_trader()
-        trader
+        trader = RegexTrader()
+        trader.trade()
 
 if __name__ == "__main__":
     start()

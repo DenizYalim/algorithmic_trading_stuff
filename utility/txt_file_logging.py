@@ -3,7 +3,7 @@ import datetime as dt
 
 class my_logger:
     def __init__(self, file_name):
-        self.file_name = "LOG" + file_name
+        self.file_name = "LOG_" + file_name
 
     def log(self, message):
         message = f" {dt.datetime.now()} --- " + message + "\n"

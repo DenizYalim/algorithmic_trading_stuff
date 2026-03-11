@@ -1,5 +1,5 @@
-from market_news_ABS import MarketNew
-from broker_ABS import Broker, SimulatedBroker
+from utility.market_news.market_news_ABS import MarketNew
+from utility.broker_apis.broker_ABS import Broker, SimulatedBroker
 from trader_ABS import RegexTrader
 
 

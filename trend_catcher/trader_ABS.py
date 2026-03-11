@@ -1,8 +1,8 @@
 import re
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from broker_ABS import Broker, TradeInfo
-from market_news_ABS import MarketNew
+from utility.broker_apis.broker_ABS import Broker, TradeInfo
+from utility.market_news.market_news_ABS import MarketNew
 import logging
 
 logging.basicConfig(level=logging.INFO)

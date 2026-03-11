@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 import logging
 from txt_file_logging import my_logger
+from dataclasses import dataclass
 
 
+@dataclass
 class _owned_assets:  # i aint writing this rn bro ffs
     pass
 

@@ -1,48 +1,83 @@
+import re
+from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from market_news_ABS import MarketNew, News_Classification
-from news_classifier_ABS import News_Classifier
 from broker_ABS import Broker, TradeInfo
+from market_news_ABS import MarketNew
 import logging
 
+logging.basicConfig(level=logging.INFO)
 
-def _trade_request():
-    def __init__(self, symbol, option, quantity, price, confidence):
-        self.symbol = symbol
-        self.option = option
-        self.quantity = quantity
-        self.price = price
-        self.confidence = confidence
+
+@dataclass
+class TradeRequest:
+    symbol: str
+    option: str
+    quantity: int
+    price: float
+    confidence: float
 
 
 class Trader(ABC):
     @abstractmethod
-    def analyze_news(self, news: MarketNew):  # takes info regarding the news and analyzes it
+    def analyze_news(self, news: MarketNew):
         pass
 
     @abstractmethod
-    def trade(self, news: MarketNew):  # takes news; analyzes it and decides a trade to place
+    def trade(self, broker: Broker, news: MarketNew):
         pass
+
+
+import re
 
 
 class RegexTrader(Trader):
-    def __init__(self, bullish_patterns: list = None, bearish_patterns: list = None, confidence_needed=0.5):
-        self.bullish_patterns = [""]  # default bullish patterns
-        self.bearish_patterns = [""]  # defauly bearish patterns
+    def __init__(self, bullish_patterns: list = None, bearish_patterns: list = None, confidence_needed=0.1):
+        self.bullish_patterns = ["buy", "bullish", "growth"]
+        self.bearish_patterns = ["sell", "bearish", "decline"]
         self.confidence_needed_to_trade = confidence_needed
 
-        if bullish_patterns:  # if patterns are given explicitly
+        if bullish_patterns:
             self.bullish_patterns = bullish_patterns
 
-        if bearish_patterns:  # if patterns are given explicitly
+        if bearish_patterns:
             self.bearish_patterns = bearish_patterns
 
-    def analyze_news(self, news: MarketNew) -> _trade_request:
-        # takes news and news_classification; does regex on it. honestly doesn't even do news_classification
+    def analyze_news(self, news: MarketNew) -> TradeRequest:
+        text = (news.title + " " + news.content).lower()
 
-        pass
+        bullish_matches = sum(1 for pattern in self.bullish_patterns if re.search(pattern, text))
+
+        bearish_matches = sum(1 for pattern in self.bearish_patterns if re.search(pattern, text))
+
+        total_patterns = len(self.bullish_patterns) + len(self.bearish_patterns)
+        confidence = (bullish_matches + bearish_matches) / max(total_patterns, 1)
+
+        # default direction
+        option = "hold"
+
+        if bullish_matches > bearish_matches:
+            option = "buy"
+        elif bearish_matches > bullish_matches:
+            option = "sell"
+
+        return TradeRequest(
+            symbol="AAPL", option=option, quantity=1, price=150.0, confidence=confidence
+        )  # how to get price and symbol? maybe classifier can also return these, or we can have a separate extractor for these, or we can use regex in trader to extract these, idk yet
 
     def trade(self, broker: Broker, news: MarketNew):
-        trade_request: _trade_request = self.analyze_news(news)
-        trade_inf = TradeInfo(symbol=trade_request.symbol, entry_price=trade_request.price)  # this conversion isn't nice create new file for trade_requests and trade_info later
+        print(f"Analyzing news: {news.title} - {news.content}")
+        trade_request: TradeRequest = self.analyze_news(news)
+
+        if trade_request.confidence < self.confidence_needed_to_trade:
+            logging.info(f"Trade skipped | symbol={trade_request.symbol} " f"confidence={trade_request.confidence}")
+            return
+
+        if trade_request.option == "hold":
+            logging.info(f"No signal | symbol={trade_request.symbol}")
+            return
+
+        trade_inf = TradeInfo(symbol=trade_request.symbol, entry_price=trade_request.price)
+
         broker.place_trade(trade_inf)
-        logging.info(f"symbol={trade_request.symbol}, entry_price={trade_request.price}")
+
+        logging.info(f"Trade executed | symbol={trade_request.symbol} " f"option={trade_request.option} " f"price={trade_request.price} " f"confidence={trade_request.confidence}")

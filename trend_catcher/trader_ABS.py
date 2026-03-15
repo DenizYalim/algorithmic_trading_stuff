@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from utility.broker_apis.broker_ABS import Broker, TradeInfo
-from utility.market_news.market_news_ABS import MarketNew
+from utility.market_news.market_news import MarketNew
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +19,7 @@ class TradeRequest:
 
 class Trader(ABC):
     @abstractmethod
-    def analyze_news(self, news: MarketNew):
+    def _analyze_news(self, news: MarketNew):
         pass
 
     @abstractmethod
@@ -42,7 +42,7 @@ class RegexTrader(Trader):
         if bearish_patterns:
             self.bearish_patterns = bearish_patterns
 
-    def analyze_news(self, news: MarketNew) -> TradeRequest:
+    def _analyze_news(self, news: MarketNew) -> TradeRequest:
         text = (news.title + " " + news.content).lower()
 
         bullish_matches = sum(1 for pattern in self.bullish_patterns if re.search(pattern, text))
@@ -66,7 +66,8 @@ class RegexTrader(Trader):
 
     def trade(self, broker: Broker, news: MarketNew):
         print(f"Analyzing news: {news.title} - {news.content}")
-        trade_request: TradeRequest = self.analyze_news(news)
+
+        trade_request: TradeRequest = self._analyze_news(news)
 
         if trade_request.confidence < self.confidence_needed_to_trade:
             logging.info(f"Trade skipped | symbol={trade_request.symbol} " f"confidence={trade_request.confidence}")

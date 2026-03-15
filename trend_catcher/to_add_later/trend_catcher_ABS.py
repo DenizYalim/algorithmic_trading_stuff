@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from trend import Trend
-from utility.market_news.market_news_ABS import MarketNew
+from utility.market_news.market_news import MarketNew
 from news_classifier_ABS import News_Classification
 
 

@@ -10,9 +10,10 @@ class _owned_assets:  # i aint writing this rn bro ffs
 
 
 class TradeInfo:
-    def __init__(self, symbol, entry_price, stop_loss=None, take_profit=None, date=None):  # TODO: adeti napcam
+    def __init__(self, symbol, entry_price, action="buy", stop_loss=None, take_profit=None, date=None):  # TODO: adeti napcam
         self.symbol = symbol
         self.entry_price = entry_price
+        self.action = action
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self.date = date
@@ -34,16 +35,23 @@ class SimulatedBroker(Broker):
         self.trade_history = []
 
     def place_trade(self, trade_info: TradeInfo):
-        # Assume long only for simplicity
-        if trade_info.entry_price > 0 and self.cash >= trade_info.entry_price:
-            quantity = int(self.cash // trade_info.entry_price)
-            if quantity > 0:
+        quantity = 1  # Fixed quantity for simplicity
+        if trade_info.action == "buy":
+            if trade_info.entry_price > 0 and self.cash >= trade_info.entry_price * quantity:
                 self.positions[trade_info.symbol] = self.positions.get(trade_info.symbol, 0) + quantity
                 self.cash -= quantity * trade_info.entry_price
                 self.trade_history.append({"symbol": trade_info.symbol, "quantity": quantity, "price": trade_info.entry_price, "date": trade_info.date, "action": "buy"})
                 logging.info(f"Bought {quantity} shares of {trade_info.symbol} at {trade_info.entry_price} on {trade_info.date}")
+            else:
+                logging.info(f"Insufficient cash or invalid price for {trade_info.symbol}")
+        elif trade_info.action == "sell":
+            # Short selling: sell without owning, increase cash, negative position
+            self.positions[trade_info.symbol] = self.positions.get(trade_info.symbol, 0) - quantity
+            self.cash += quantity * trade_info.entry_price
+            self.trade_history.append({"symbol": trade_info.symbol, "quantity": -quantity, "price": trade_info.entry_price, "date": trade_info.date, "action": "sell"})
+            logging.info(f"Shorted {quantity} shares of {trade_info.symbol} at {trade_info.entry_price} on {trade_info.date}")
         else:
-            logging.info(f"Insufficient cash or invalid price for {trade_info.symbol}")
+            logging.info(f"Unknown action {trade_info.action} for {trade_info.symbol}")
 
     def get_portfolio_value(self, current_prices):
         value = self.cash

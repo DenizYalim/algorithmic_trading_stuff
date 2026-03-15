@@ -32,8 +32,72 @@ import re
 
 class RegexTrader(Trader):
     def __init__(self, bullish_patterns: list = None, bearish_patterns: list = None, confidence_needed=0.1, ticker="AAPL"):
-        self.bullish_patterns = ["buy", "bullish", "growth"]
-        self.bearish_patterns = ["sell", "bearish", "decline"]
+        self.bullish_patterns = [
+            "buy",
+            "strong buy",
+            "outperform",
+            "overweight",
+            "bullish",
+            "uptrend",
+            "rally",
+            "surge",
+            "soar",
+            "record high",
+            "breakout",
+            "beat expectations",
+            "earnings beat",
+            "profit growth",
+            "revenue growth",
+            "guidance raised",
+            "upgrade",
+            "price target raised",
+            "expansion",
+            "partnership",
+            "acquisition",
+            "innovation",
+            "product launch",
+            "market share gain",
+            "positive outlook",
+            "optimistic",
+            "momentum",
+            "strong demand",
+            "recovery",
+            "rebound",
+        ]
+
+        self.bearish_patterns = [
+            "sell",
+            "strong sell",
+            "underperform",
+            "underweight",
+            "bearish",
+            "downtrend",
+            "drop",
+            "decline",
+            "plunge",
+            "slump",
+            "fall",
+            "crash",
+            "selloff",
+            "earnings miss",
+            "missed expectations",
+            "profit warning",
+            "guidance cut",
+            "downgrade",
+            "price target cut",
+            "weak demand",
+            "loss",
+            "layoffs",
+            "bankruptcy",
+            "lawsuit",
+            "investigation",
+            "regulation",
+            "scandal",
+            "supply shortage",
+            "recession fears",
+            "slowdown",
+            "negative outlook",
+        ]
         self.confidence_needed_to_trade = confidence_needed
         self.ticker = ticker
 
@@ -66,7 +130,7 @@ class RegexTrader(Trader):
         )  # how to get price and symbol? maybe classifier can also return these, or we can have a separate extractor for these, or we can use regex in trader to extract these, idk yet
 
     def trade(self, broker: Broker, news: MarketNew, current_price: float):
-        print(f"Analyzing news: {news.title} - {news.content}")
+        print(f"Analyzing news: {news.title} - {news.date}")
 
         trade_request: TradeRequest = self._analyze_news(news)
         trade_request.price = current_price  # Set the actual price
@@ -79,7 +143,7 @@ class RegexTrader(Trader):
             logging.info(f"No signal | symbol={trade_request.symbol}")
             return
 
-        trade_inf = TradeInfo(symbol=trade_request.symbol, entry_price=trade_request.price, date=news.date)
+        trade_inf = TradeInfo(symbol=trade_request.symbol, entry_price=trade_request.price, action=trade_request.option, date=news.date)
 
         broker.place_trade(trade_inf)
 

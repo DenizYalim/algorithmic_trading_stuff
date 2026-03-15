@@ -30,6 +30,8 @@ class Backtester:
 
         news_list.sort(key=lambda x: x.get("datetime", 0))
 
+        # Group news by date
+        news_by_date = {}
         for news_dict in news_list:
             raw_timestamp = news_dict.get("datetime")
             if raw_timestamp is None:
@@ -42,20 +44,33 @@ class Backtester:
                 logging.info(f"Skipping weekend news: {news_dict.get('headline')} ({news_date})")
                 continue
 
-            site_source = self.news_provider.get_site_source(news_dict.get("url"))
+            if news_date not in news_by_date:
+                news_by_date[news_date] = []
+            news_by_date[news_date].append(news_dict)
 
-            market_new = MarketNew(title=news_dict.get("headline"), content=site_source, source=news_dict.get("source"), date=news_date)
+        initial_cash = self.broker.cash  # Assuming broker has initial cash
 
-            price = self.price_provider.get_price_on_date(ticker, market_new.date)
+        for date in sorted(news_by_date.keys()):
+            price = self.price_provider.get_price_on_date(ticker, date)
             if price is None:
-                logging.info(f"No price found for {ticker} on {market_new.date}, skipping.")
+                logging.info(f"No price found for {ticker} on {date}, skipping day.")
                 continue
 
-            self.trader.trade(self.broker, market_new, price)
+            for news_dict in news_by_date[date]:
+                site_source = self.news_provider.get_site_source(news_dict.get("url"))
+
+                market_new = MarketNew(title=news_dict.get("headline"), content=site_source, source=news_dict.get("source"), date=date)
+
+                self.trader.trade(self.broker, market_new, price)
+
+            # After processing all news for the day, print current profit
+            current_prices = {ticker: price}  # Use the day's price
+            current_value = self.broker.get_portfolio_value(current_prices)
+            current_profit = current_value - initial_cash
+            print(f"Date: {date}, Portfolio Value: {current_value:.2f}, Profit: {current_profit:.2f}")
 
         latest_prices = self.price_provider.get_latest_prices([ticker])
         final_value = self.broker.get_portfolio_value(latest_prices)
-        initial_cash = 10000
         profit = final_value - initial_cash
 
         print(f"Backtest completed. Final portfolio value: {final_value}, Profit: {profit}")

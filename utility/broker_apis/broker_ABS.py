@@ -28,14 +28,29 @@ class Broker(ABC):
 
 
 class SimulatedBroker(Broker):
+    def __init__(self, initial_cash=10000):
+        self.cash = initial_cash
+        self.positions = {}  # symbol: quantity
+        self.trade_history = []
+
     def place_trade(self, trade_info: TradeInfo):
-        logging.info(
-            f"Placing trade for {trade_info.symbol} at entry price {trade_info.entry_price} with stop loss {trade_info.stop_loss} and take profit {trade_info.take_profit} on date {trade_info.date}"
-        )
-        my_log = my_logger("simulation_trader.txt")
-        my_log.log(
-            f"Placing trade for {trade_info.symbol} at entry price {trade_info.entry_price} with stop loss {trade_info.stop_loss} and take profit {trade_info.take_profit} on date {trade_info.date}"
-        )
+        # Assume long only for simplicity
+        if trade_info.entry_price > 0 and self.cash >= trade_info.entry_price:
+            quantity = int(self.cash // trade_info.entry_price)
+            if quantity > 0:
+                self.positions[trade_info.symbol] = self.positions.get(trade_info.symbol, 0) + quantity
+                self.cash -= quantity * trade_info.entry_price
+                self.trade_history.append({"symbol": trade_info.symbol, "quantity": quantity, "price": trade_info.entry_price, "date": trade_info.date, "action": "buy"})
+                logging.info(f"Bought {quantity} shares of {trade_info.symbol} at {trade_info.entry_price} on {trade_info.date}")
+        else:
+            logging.info(f"Insufficient cash or invalid price for {trade_info.symbol}")
+
+    def get_portfolio_value(self, current_prices):
+        value = self.cash
+        for symbol, qty in self.positions.items():
+            if symbol in current_prices:
+                value += qty * current_prices[symbol]
+        return value
 
     def place_trade_requests(self):
         pass

@@ -23,7 +23,7 @@ class Trader(ABC):
         pass
 
     @abstractmethod
-    def trade(self, broker: Broker, news: MarketNew):
+    def trade(self, broker: Broker, news: MarketNew, current_price: float):
         pass
 
 
@@ -31,10 +31,11 @@ import re
 
 
 class RegexTrader(Trader):
-    def __init__(self, bullish_patterns: list = None, bearish_patterns: list = None, confidence_needed=0.1):
+    def __init__(self, bullish_patterns: list = None, bearish_patterns: list = None, confidence_needed=0.1, ticker="AAPL"):
         self.bullish_patterns = ["buy", "bullish", "growth"]
         self.bearish_patterns = ["sell", "bearish", "decline"]
         self.confidence_needed_to_trade = confidence_needed
+        self.ticker = ticker
 
         if bullish_patterns:
             self.bullish_patterns = bullish_patterns
@@ -61,13 +62,14 @@ class RegexTrader(Trader):
             option = "sell"
 
         return TradeRequest(
-            symbol="AAPL", option=option, quantity=1, price=150.0, confidence=confidence
+            symbol=self.ticker, option=option, quantity=1, price=150.0, confidence=confidence
         )  # how to get price and symbol? maybe classifier can also return these, or we can have a separate extractor for these, or we can use regex in trader to extract these, idk yet
 
-    def trade(self, broker: Broker, news: MarketNew):
+    def trade(self, broker: Broker, news: MarketNew, current_price: float):
         print(f"Analyzing news: {news.title} - {news.content}")
 
         trade_request: TradeRequest = self._analyze_news(news)
+        trade_request.price = current_price  # Set the actual price
 
         if trade_request.confidence < self.confidence_needed_to_trade:
             logging.info(f"Trade skipped | symbol={trade_request.symbol} " f"confidence={trade_request.confidence}")
@@ -77,7 +79,7 @@ class RegexTrader(Trader):
             logging.info(f"No signal | symbol={trade_request.symbol}")
             return
 
-        trade_inf = TradeInfo(symbol=trade_request.symbol, entry_price=trade_request.price)
+        trade_inf = TradeInfo(symbol=trade_request.symbol, entry_price=trade_request.price, date=news.date)
 
         broker.place_trade(trade_inf)
 

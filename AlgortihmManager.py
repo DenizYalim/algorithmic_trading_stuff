@@ -32,7 +32,7 @@ def finnhub_regex_trader_ticker(ticker="AAPL"):  # news provider obj doesnt crea
             date=news.get("datetime"),
         )
 
-        trader.trade(broker=broker, news=market_new)
+        trader.trade(broker=broker, news=market_new, current_price=150.0)
 
 
 if __name__ == "__main__":

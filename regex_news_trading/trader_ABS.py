@@ -148,3 +148,11 @@ class RegexTrader(Trader):
         broker.place_trade(trade_inf)
 
         logging.info(f"Trade executed | symbol={trade_request.symbol} " f"option={trade_request.option} " f"price={trade_request.price} " f"confidence={trade_request.confidence}")
+
+
+class LLMTrader(Trader):
+    def _analyze_news(self, news: MarketNew):
+        pass
+
+    def trade(self, broker: Broker, news: MarketNew, current_price: float):
+        pass

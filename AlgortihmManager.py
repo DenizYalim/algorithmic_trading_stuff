@@ -1,10 +1,10 @@
 # This file will manage all active algorithms, and will be responsible for starting and stopping them as needed.
 # Will probably have google sheets ui, way later on
 
-from trend_catcher.trader_ABS import RegexTrader
+from utility.trader_ABS import RegexTrader
 from utility.market_news.market_news_provider_ABS import FinnhubNewsProvider
 from utility.broker_apis.broker_ABS import Broker, SimulatedBroker
-from utility.market_news.market_news import MarketNew
+from utility.market_news.market_news import MarketNews
 
 
 def finnhub_regex_trader_no_ticker():
@@ -25,7 +25,7 @@ def finnhub_regex_trader_ticker(ticker="AAPL"):  # news provider obj doesnt crea
         print(f"news: {news.get('headline')}")
         site_source = news_provider.get_site_source(news.get("url"))
 
-        market_new = MarketNew(
+        market_new = MarketNews(
             title=news.get("headline"),
             content=site_source,
             source=news.get("source"),

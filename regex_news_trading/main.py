@@ -1,11 +1,11 @@
-from utility.market_news.market_news import MarketNew
+from utility.market_news.market_news import MarketNews
 from utility.broker_apis.broker_ABS import Broker, SimulatedBroker
-from trader_ABS import RegexTrader
+from utility.trader_ABS import RegexTrader
 
 
-def ask_for_news() -> MarketNew:
+def ask_for_news() -> MarketNews:
     # Implement logic to fetch news from various sources and return a MarketNew object
-    return MarketNew(title="Apple stock is bullish", content="Apple's stock is expected to grow due to strong sales.", source="News Source", date="2024-06-01")
+    return MarketNews(title="Apple stock is bullish", content="Apple's stock is expected to grow due to strong sales.", source="News Source", date="2024-06-01")
 
 
 def start():  # REGEX DEMO

@@ -1,33 +1,15 @@
 import re
+
+from utility.market_news.market_news import MarketNews
+from utility.trader_ABS import Trader, TradeRequest
+
+import re
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from utility.broker_apis.broker_ABS import Broker, TradeInfo
-from utility.market_news.market_news import MarketNew
+from utility.market_news.market_news import MarketNews
 import logging
-
-logging.basicConfig(level=logging.INFO)
-
-
-@dataclass
-class TradeRequest:
-    symbol: str
-    option: str
-    quantity: int
-    price: float
-    confidence: float
-
-
-class Trader(ABC):
-    @abstractmethod
-    def _analyze_news(self, news: MarketNew):
-        pass
-
-    @abstractmethod
-    def trade(self, broker: Broker, news: MarketNew, current_price: float):
-        pass
-
-
-import re
+import pandas as pd
 
 
 class RegexTrader(Trader):
@@ -107,7 +89,7 @@ class RegexTrader(Trader):
         if bearish_patterns:
             self.bearish_patterns = bearish_patterns
 
-    def _analyze_news(self, news: MarketNew) -> TradeRequest:
+    def _analyze(self, news: MarketNews) -> TradeRequest:
         text = (news.title + " " + news.content).lower()
 
         bullish_matches = sum(1 for pattern in self.bullish_patterns if re.search(pattern, text))
@@ -129,10 +111,10 @@ class RegexTrader(Trader):
             symbol=self.ticker, option=option, quantity=1, price=150.0, confidence=confidence
         )  # how to get price and symbol? maybe classifier can also return these, or we can have a separate extractor for these, or we can use regex in trader to extract these, idk yet
 
-    def trade(self, broker: Broker, news: MarketNew, current_price: float):
+    def trade(self, broker: Broker, news: MarketNews, current_price: float):
         print(f"Analyzing news: {news.title} - {news.date}")
 
-        trade_request: TradeRequest = self._analyze_news(news)
+        trade_request: TradeRequest = self._analyze(news)
         trade_request.price = current_price  # Set the actual price
 
         if trade_request.confidence < self.confidence_needed_to_trade:
@@ -150,9 +132,11 @@ class RegexTrader(Trader):
         logging.info(f"Trade executed | symbol={trade_request.symbol} " f"option={trade_request.option} " f"price={trade_request.price} " f"confidence={trade_request.confidence}")
 
 
+"""
 class LLMTrader(Trader):
-    def _analyze_news(self, news: MarketNew):
+    def _analyze_news(self, news: MarketNews):
         pass
 
-    def trade(self, broker: Broker, news: MarketNew, current_price: float):
+    def trade(self, broker: Broker, news: MarketNews, current_price: float):
         pass
+"""

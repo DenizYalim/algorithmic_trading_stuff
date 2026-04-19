@@ -51,6 +51,19 @@ class Backtester:
             if raw_prices.empty:
                 return pd.DataFrame(columns=[ticker])
 
+            if isinstance(raw_prices.columns, pd.MultiIndex):
+                for key in [
+                    ("Close", ticker),
+                    (ticker, "Close"),
+                    ("Adj Close", ticker),
+                    (ticker, "Adj Close"),
+                ]:
+                    if key in raw_prices.columns:
+                        return raw_prices[[key]].droplevel(
+                            level=1 if key[1] == ticker else 0,
+                            axis=1,
+                        ).rename(columns={key[0] if key[1] == ticker else key[1]: ticker})
+
             # If provider returns single unnamed/other-named column, rename it
             if ticker in raw_prices.columns:
                 return raw_prices[[ticker]].copy()

@@ -10,10 +10,11 @@ class _owned_assets:  # i aint writing this rn bro ffs
 
 
 class TradeInfo:
-    def __init__(self, symbol, entry_price, action="buy", stop_loss=None, take_profit=None, date=None):  # TODO: adeti napcam
+    def __init__(self, symbol, entry_price, action="buy", quantity=1, stop_loss=None, take_profit=None, date=None):  # TODO: adeti napcam
         self.symbol = symbol
         self.entry_price = entry_price
-        self.option = option
+        self.option = action
+        self.quantity = quantity
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self.date = date
@@ -35,23 +36,42 @@ class SimulatedBroker(Broker):
         self.trade_history = []
 
     def place_trade(self, trade_info: TradeInfo):
-        quantity = 1  # Fixed quantity for simplicity
-        if trade_info.option == "buy":
-            if trade_info.entry_price > 0 and self.cash >= trade_info.entry_price * quantity:
+        quantity = int(getattr(trade_info, "quantity", 1) or 1)
+        price = getattr(trade_info, "entry_price", None)
+        if price is None:
+            price = getattr(trade_info, "price", None)
+        option = getattr(trade_info, "option", getattr(trade_info, "action", None))
+
+        if option == "hold":
+            logging.info(f"Holding {trade_info.symbol}; no trade placed.")
+            return None
+
+        if price is None:
+            logging.info(f"Missing trade price for {trade_info.symbol}")
+            return None
+
+        if option == "buy":
+            if price > 0 and self.cash >= price * quantity:
                 self.positions[trade_info.symbol] = self.positions.get(trade_info.symbol, 0) + quantity
-                self.cash -= quantity * trade_info.entry_price
-                self.trade_history.append({"symbol": trade_info.symbol, "quantity": quantity, "price": trade_info.entry_price, "date": trade_info.date, "action": "buy"})
-                logging.info(f"Bought {quantity} shares of {trade_info.symbol} at {trade_info.entry_price} on {trade_info.date}")
+                self.cash -= quantity * price
+                execution = {"symbol": trade_info.symbol, "quantity": quantity, "price": price, "date": getattr(trade_info, "date", None), "action": "buy"}
+                self.trade_history.append(execution)
+                logging.info(f"Bought {quantity} shares of {trade_info.symbol} at {price} on {getattr(trade_info, 'date', None)}")
+                return execution
             else:
                 logging.info(f"Insufficient cash or invalid price for {trade_info.symbol}")
-        elif trade_info.option == "sell":
+                return None
+        elif option == "sell":
             # Short selling: sell without owning, increase cash, negative position
             self.positions[trade_info.symbol] = self.positions.get(trade_info.symbol, 0) - quantity
-            self.cash += quantity * trade_info.entry_price
-            self.trade_history.append({"symbol": trade_info.symbol, "quantity": -quantity, "price": trade_info.entry_price, "date": trade_info.date, "action": "sell"})
-            logging.info(f"Shorted {quantity} shares of {trade_info.symbol} at {trade_info.entry_price} on {trade_info.date}")
+            self.cash += quantity * price
+            execution = {"symbol": trade_info.symbol, "quantity": -quantity, "price": price, "date": getattr(trade_info, "date", None), "action": "sell"}
+            self.trade_history.append(execution)
+            logging.info(f"Shorted {quantity} shares of {trade_info.symbol} at {price} on {getattr(trade_info, 'date', None)}")
+            return execution
         else:
-            logging.info(f"Unknown action {trade_info.option} for {trade_info.symbol}")
+            logging.info(f"Unknown action {option} for {trade_info.symbol}")
+            return None
 
     def get_portfolio_value(self, current_prices):
         value = self.cash
@@ -61,5 +81,9 @@ class SimulatedBroker(Broker):
         return value
 
     def place_trade_requests(self, trade_requests: list[TradeInfo]):
+        executions = []
         for trade_request in trade_requests:
-            self.place_trade(trade_request)
+            execution = self.place_trade(trade_request)
+            if execution is not None:
+                executions.append(execution)
+        return executions

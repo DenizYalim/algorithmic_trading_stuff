@@ -4,3 +4,4 @@
 *todo*
 __pycache__/
 *.txt
+.yfinance_cache/

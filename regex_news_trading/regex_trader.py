@@ -89,7 +89,7 @@ class RegexTrader(Trader):
         if bearish_patterns:
             self.bearish_patterns = bearish_patterns
 
-    def _analyze(self, news: MarketNews) -> TradeRequest:
+    def _analyze(self, news: MarketNews, marketData=None) -> TradeRequest:
         text = (news.title + " " + news.content).lower()
 
         bullish_matches = sum(1 for pattern in self.bullish_patterns if re.search(pattern, text))
@@ -111,25 +111,38 @@ class RegexTrader(Trader):
             symbol=self.ticker, option=option, quantity=1, price=150.0, confidence=confidence
         )  # how to get price and symbol? maybe classifier can also return these, or we can have a separate extractor for these, or we can use regex in trader to extract these, idk yet
 
-    def trade(self, broker: Broker, news: MarketNews, current_price: float):
+    def trade(self, broker: Broker, news: MarketNews = None, marketData=None, current_price: float = None):
+        if news is None:
+            logging.info("No news provided to RegexTrader")
+            return []
+
         print(f"Analyzing news: {news.title} - {news.date}")
 
         trade_request: TradeRequest = self._analyze(news)
+        if current_price is None:
+            current_price = marketData
+
+        if current_price is None:
+            logging.info("No current price provided to RegexTrader")
+            return []
+
         trade_request.price = current_price  # Set the actual price
+        trade_request.date = news.date
 
         if trade_request.confidence < self.confidence_needed_to_trade:
             logging.info(f"Trade skipped | symbol={trade_request.symbol} " f"confidence={trade_request.confidence}")
-            return
+            return []
 
         if trade_request.option == "hold":
             logging.info(f"No signal | symbol={trade_request.symbol}")
-            return
+            return []
 
         trade_inf = TradeInfo(symbol=trade_request.symbol, entry_price=trade_request.price, action=trade_request.option, date=news.date)
 
-        broker.place_trade(trade_inf)
+        execution = broker.place_trade(trade_inf)
 
         logging.info(f"Trade executed | symbol={trade_request.symbol} " f"option={trade_request.option} " f"price={trade_request.price} " f"confidence={trade_request.confidence}")
+        return [execution] if execution is not None else []
 
 
 """

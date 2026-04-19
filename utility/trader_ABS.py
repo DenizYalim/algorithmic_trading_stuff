@@ -16,6 +16,7 @@ class TradeRequest:
     quantity: int
     price: float
     confidence: float
+    date: str = None
 
 
 class Trader(ABC):

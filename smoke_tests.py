@@ -7,8 +7,9 @@ from backtester import Backtester
 from GA_prediction import GATrader, GeneticAlgorithmConfig
 from GA_prediction.Problem import MarketPredictionProblem
 from momentum_trading import MomentumTrader
+from strategy_comparison import StrategySpec, compare_strategies
 from utility.broker_apis.broker_ABS import SimulatedBroker
-from utility.trader_ABS import TradeRequest
+from utility.trader_ABS import TradeRequest, Trader
 
 
 class SyntheticPriceProvider:
@@ -34,6 +35,36 @@ class SyntheticPriceProvider:
             ticker: float(self.history[ticker].iloc[-1])
             for ticker in tickers
         }
+
+
+class BuyAndHoldTestTrader(Trader):
+    def __init__(self, ticker: str):
+        self.ticker = ticker
+        self.has_bought = False
+
+    def _analyze(self, news=None, marketData=None):
+        if self.has_bought or marketData is None or marketData.empty:
+            return []
+
+        series = marketData[self.ticker].dropna().astype(float)
+        if series.empty:
+            return []
+
+        self.has_bought = True
+        return [
+            TradeRequest(
+                symbol=self.ticker,
+                option="buy",
+                quantity=1,
+                price=float(series.iloc[-1]),
+                confidence=1.0,
+                date=pd.Timestamp(series.index[-1]).strftime("%Y-%m-%d"),
+            )
+        ]
+
+    def trade(self, broker, news=None, marketData=None):
+        requests = self._analyze(news=news, marketData=marketData)
+        return broker.place_trade_requests(requests) if requests else []
 
 
 class GeneticAlgorithmSmokeTests(unittest.TestCase):
@@ -153,6 +184,38 @@ class GeneticAlgorithmSmokeTests(unittest.TestCase):
         self.assertGreater(len(results["trade_history"]), 0)
         traded_dates = {trade["date"] for trade in results["trade_history"]}
         self.assertNotIn(None, traded_dates)
+
+    def test_compare_strategies_runs_multiple_traders(self):
+        provider = SyntheticPriceProvider()
+        comparison = compare_strategies(
+            strategies=[
+                StrategySpec(
+                    name="buy_hold",
+                    trader_factory=lambda: BuyAndHoldTestTrader("AAPL"),
+                    lookback_days=1,
+                ),
+                StrategySpec(
+                    name="momentum",
+                    trader_factory=lambda: MomentumTrader(
+                        "AAPL",
+                        short_window=5,
+                        long_window=20,
+                        min_confidence_to_trade=0.0,
+                    ),
+                    lookback_days=20,
+                ),
+            ],
+            ticker="AAPL",
+            start_date="2025-01-01",
+            end_date="2025-09-30",
+            price_provider=provider,
+        )
+
+        self.assertEqual(len(comparison), 2)
+        self.assertIn("strategy", comparison.columns)
+        self.assertIn("profit", comparison.columns)
+        self.assertIn("trade_count", comparison.columns)
+        self.assertEqual(set(comparison["strategy"]), {"buy_hold", "momentum"})
 
 
 if __name__ == "__main__":

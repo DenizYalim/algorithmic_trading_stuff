@@ -31,6 +31,7 @@ class Broker(ABC):
 
 class SimulatedBroker(Broker):
     def __init__(self, initial_cash=10000):
+        self.initial_cash = initial_cash
         self.cash = initial_cash
         self.positions = {}  # symbol: quantity
         self.trade_history = []
